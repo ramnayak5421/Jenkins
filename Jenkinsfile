@@ -6,6 +6,7 @@ pipeline {
         BRANCH_NAME = 'main'
         IMAGE_NAME = 'vinay/bcd23-vinay-jenkins:latest'
         CONTAINER_NAME = 'nodejs-app'
+        SONAR_TOKEN = credentials('sonar-token') // Store SonarQube token in Jenkins credentials
         DOCKER_PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
     }
     
@@ -38,7 +39,8 @@ pipeline {
                         sh """
                             ${scannerHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=jenkins-pipeline-project \
-                            -Dsonar.host.url=http://host.docker.internal:9000
+                            -Dsonar.host.url=http://host.docker.internal:9000 \
+                            -Dsonar.login=${SONAR_TOKEN}
                         """
                     }
                 }
@@ -51,7 +53,6 @@ pipeline {
                 script {
                     withEnv(["PATH+DOCKER=${DOCKER_PATH}"]) {
                         sh 'which docker || echo "Docker not found in PATH"'
-                        sh 'docker --version || echo "Docker command failed"'
                         sh "docker build -t ${IMAGE_NAME} ."
                     }
                 }
