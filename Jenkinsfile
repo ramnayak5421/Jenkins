@@ -6,7 +6,6 @@ pipeline {
         BRANCH_NAME = 'main'
         IMAGE_NAME = 'vinay/bcd23-vinay-jenkins:latest'
         CONTAINER_NAME = 'nodejs-app'
-        // Add Docker path to environment variables
         DOCKER_PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
     }
     
@@ -36,7 +35,11 @@ pipeline {
                 script {
                     def scannerHome = tool 'SonarScanner'
                     withSonarQubeEnv('MySonarQube') {
-                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=jenkins-pipeline-project"
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=jenkins-pipeline-project \
+                            -Dsonar.host.url=http://host.docker.internal:9000
+                        """
                     }
                 }
             }
@@ -46,7 +49,6 @@ pipeline {
             steps {
                 echo "Building Docker image: ${IMAGE_NAME}"
                 script {
-                    // Use withEnv to ensure Docker is found in PATH
                     withEnv(["PATH+DOCKER=${DOCKER_PATH}"]) {
                         sh 'which docker || echo "Docker not found in PATH"'
                         sh 'docker --version || echo "Docker command failed"'
@@ -60,9 +62,7 @@ pipeline {
             steps {
                 echo "Pushing Docker image to DockerHub..."
                 script {
-                    // Use withEnv to ensure Docker is found in PATH
                     withEnv(["PATH+DOCKER=${DOCKER_PATH}"]) {
-                        // Use credentials binding instead of withDockerRegistry for better compatibility
                         withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", 
                                                          usernameVariable: 'DOCKER_USERNAME', 
                                                          passwordVariable: 'DOCKER_PASSWORD')]) {
@@ -79,17 +79,10 @@ pipeline {
             steps {
                 echo "Deploying Docker container: ${CONTAINER_NAME}"
                 script {
-                    // Use withEnv to ensure Docker is found in PATH
                     withEnv(["PATH+DOCKER=${DOCKER_PATH}"]) {
-                        // Add error handling for container operations
                         sh '''
-                            # Stop & remove existing container (if any)
                             docker ps -a | grep -q ${CONTAINER_NAME} && docker rm -f ${CONTAINER_NAME} || echo "No existing container to remove"
-                            
-                            # Run new container with health check
                             docker run -d --name ${CONTAINER_NAME} -p 9090:9090 ${IMAGE_NAME}
-                            
-                            # Verify container is running
                             CONTAINER_RUNNING=$(docker ps -q -f name=${CONTAINER_NAME})
                             if [ -z "$CONTAINER_RUNNING" ]; then
                                 echo "Error: Failed to start container ${CONTAINER_NAME}"
@@ -116,7 +109,6 @@ pipeline {
         }
         failure {
             echo "Pipeline failed. Please check logs."
-            // Add more detailed error reporting if needed
             withEnv(["PATH+DOCKER=${DOCKER_PATH}"]) {
                 sh 'docker ps -a || true'
                 sh 'docker images || true'
