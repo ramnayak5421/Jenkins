@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKERHUB_CREDENTIALS = 'dockerhub-credentials'
         BRANCH_NAME = 'main'
-        IMAGE_NAME = 'karthikkraj/bcd41-karthik-jenkins:latest'
+        IMAGE_NAME = 'vinay/bcd23-vinay-jenkins:latest'
         CONTAINER_NAME = 'nodejs-app'
         // Add Docker path to environment variables
         DOCKER_PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
@@ -18,7 +18,7 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 echo "Checking out code from branch: ${BRANCH_NAME}"
-                git branch: "${BRANCH_NAME}", url: 'https://github.com/karthikkraj/jenkins-pipeline-project'
+                git branch: "${BRANCH_NAME}", url: 'https://github.com/VINAY-KUMAR-VANKAYALAPATI/jenikins-pipeline'
             }
         }
         
